@@ -1,4 +1,3 @@
-HTML
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -6,10 +5,58 @@ HTML
 <title>Облачная практика</title>
 </head>
 <body>
+
 <h1>Проект успешно запущен в облаке!</h1>
 <hr>
+
 <p>Работу выполнил студент: <strong>Гаппаров Белал</strong></p>
-<p>Группа:po243 <strong>ПО-3</strong></p>
+<p>Группа: po243 <strong>ПО-3</strong></p>
 <p>Тип облака: <strong>PaaS (GitHub Pages)</strong></p>
+
+<hr>
+
+<h2>Отправка данных в Firebase</h2>
+
+<input id="name" placeholder="Введите имя"><br><br>
+<input id="email" placeholder="Введите email"><br><br>
+
+<button onclick="sendData()">Отправить</button>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
+import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAs_Ldj7yMMzbDBSR89o3OV4245k-cpmyQ",
+  authDomain: "belal-a68b1.firebaseapp.com",
+  projectId: "belal-a68b1",
+  storageBucket: "belal-a68b1.firebasestorage.app",
+  messagingSenderId: "157333722793",
+  appId: "1:157333722793:web:4342f40b13cfa71acffbb8",
+  measurementId: "G-1KQ0DMB6Q6"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+async function sendData() {
+  const name = document.getElementById("name").value;
+  const email = document.getElementById("email").value;
+
+  try {
+    await addDoc(collection(db, "requests"), {
+      name: name,
+      email: email
+    });
+
+    alert("Данные отправлены!");
+  } catch (e) {
+    alert("Ошибка: " + e);
+  }
+}
+
+window.sendData = sendData;
+</script>
+
 </body>
 </html>
