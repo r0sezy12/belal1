@@ -2,21 +2,20 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Hazigram — Рабочая версия</title>
+    <title>Hazigram — Белал</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #ebedf0; margin: 0; display: flex; flex-direction: column; height: 100vh; }
+        body { font-family: 'Inter', sans-serif; background: #f0f2f5; margin: 0; display: flex; flex-direction: column; height: 100vh; }
         header { background: white; padding: 10px 50px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .main-content { display: flex; justify-content: center; gap: 20px; padding: 20px; flex: 1; overflow: hidden; }
-        .feed-section { width: 500px; overflow-y: auto; }
-        .chat-panel { width: 350px; background: white; border-radius: 12px; display: flex; flex-direction: column; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        #chat-box { flex: 1; overflow-y: auto; padding: 15px; border-top: 1px solid #eee; display: flex; flex-direction: column; gap: 10px; }
-        .card { background: white; padding: 20px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .btn { background: #0084ff; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; }
-        input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px; box-sizing: border-box; }
-        .login-btn { background: #4285F4; color: white; padding: 10px 20px; border-radius: 5px; border: none; cursor: pointer; font-weight: bold; }
-        .msg { padding: 8px 12px; border-radius: 10px; font-size: 14px; max-width: 85%; }
-        .my-msg { align-self: flex-end; background: #0084ff; color: white; }
-        .other-msg { align-self: flex-start; background: #e4e6eb; color: black; }
+        .feed-section { width: 500px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+        .chat-panel { width: 350px; background: white; border-radius: 15px; display: flex; flex-direction: column; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        #chat-box { flex: 1; overflow-y: auto; padding: 15px; border-top: 1px solid #eee; display: flex; flex-direction: column; gap: 8px; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px; box-sizing: border-box; }
+        .btn { background: #0084ff; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; transition: 0.3s; }
+        .btn:hover { background: #0073e6; }
+        .msg { padding: 8px 12px; border-radius: 15px; font-size: 14px; max-width: 80%; background: #e4e6eb; align-self: flex-start; }
+        .my-msg { background: #0084ff; color: white; align-self: flex-end; }
     </style>
 </head>
 <body>
@@ -24,12 +23,7 @@
 <header>
     <h2 style="color: #0084ff; margin: 0;">Hazigram</h2>
     <div id="auth-area">
-        <button class="login-btn" id="loginBtn">ВОЙТИ ЧЕРЕЗ GOOGLE</button>
-        <div id="user-info" style="display:none; align-items:center; gap:10px;">
-            <img id="user-pic" style="width:30px; border-radius:50%;">
-            <b id="user-name"></b>
-            <button id="logoutBtn" style="font-size: 10px; color: red; border: none; background: none; cursor: pointer;">Выйти</button>
-        </div>
+        <button class="btn" id="loginBtn" style="padding: 8px 20px;">Войти через Google</button>
     </div>
 </header>
 
@@ -37,17 +31,16 @@
     <div class="feed-section">
         <div class="card">
             <input type="text" id="postText" placeholder="Что у вас нового?">
-            <input type="text" id="postImg" placeholder="Ссылка на фото (URL)">
             <button class="btn" id="publishBtn">Опубликовать</button>
         </div>
         <div id="feed"></div>
     </div>
 
     <div class="chat-panel">
-        <div style="padding: 15px; font-weight: bold; border-bottom: 1px solid #eee;">💬 Общий чат</div>
+        <div style="padding: 15px; font-weight: bold;">💬 Общий чат</div>
         <div id="chat-box"></div>
         <div style="padding: 10px; border-top: 1px solid #eee;">
-            <input type="text" id="chatInput" placeholder="Введите сообщение...">
+            <input type="text" id="chatInput" placeholder="Напишите сообщение...">
             <button class="btn" id="sendBtn">Отправить ➤</button>
         </div>
     </div>
@@ -56,7 +49,7 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
     import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
-    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAs_Ldj7yMMzbDBSR89o3OV4245k-cpmyQ",
@@ -72,92 +65,62 @@
     const auth = getAuth(app);
     const provider = new GoogleAuthProvider();
 
-    let currentUser = null;
+    let user = null;
 
-    // --- ФУНКЦИОНАЛ АВТОРИЗАЦИИ ---
-    document.getElementById('loginBtn').addEventListener('click', () => {
-        signInWithPopup(auth, provider).catch(err => alert("Ошибка: " + err.message));
-    });
+    // Авторизация
+    document.getElementById('loginBtn').onclick = () => signInWithPopup(auth, provider).catch(e => alert(e.message));
 
-    document.getElementById('logoutBtn').addEventListener('click', () => {
-        signOut(auth).then(() => location.reload());
-    });
-
-    onAuthStateChanged(auth, (user) => {
-        if (user) {
-            currentUser = user;
-            document.getElementById('loginBtn').style.display = 'none';
-            document.getElementById('user-info').style.display = 'flex';
-            document.getElementById('user-name').innerText = user.displayName;
-            document.getElementById('user-pic').src = user.photoURL;
-            loadData();
+    onAuthStateChanged(auth, (u) => {
+        if (u) {
+            user = u;
+            document.getElementById('auth-area').innerHTML = `<img src="${u.photoURL}" style="width:30px; border-radius:50%; vertical-align:middle;"> <b>${u.displayName}</b>`;
+            startApp();
         }
     });
 
-    // --- ФУНКЦИОНАЛ ЛЕНТЫ (POSTS) ---
-    document.getElementById('publishBtn').addEventListener('click', async () => {
-        const text = document.getElementById('postText').value;
-        const img = document.getElementById('postImg').value;
-        if(!currentUser) return alert("Сначала войдите!");
-        if(!text) return alert("Напишите что-нибудь!");
-
-        await addDoc(collection(db, "posts"), {
-            author: currentUser.displayName,
-            text: text,
-            image: img,
-            timestamp: serverTimestamp()
+    // Работа с данными
+    function startApp() {
+        // Чат в реальном времени
+        onSnapshot(query(collection(db, "messages"), orderBy("timestamp", "asc")), (snap) => {
+            const box = document.getElementById('chat-box');
+            box.innerHTML = "";
+            snap.forEach(d => {
+                const m = d.data();
+                const isMe = m.uid === user.uid;
+                box.innerHTML += `<div class="msg ${isMe ? 'my-msg' : ''}"><b>${m.name}:</b> ${m.text}</div>`;
+            });
+            box.scrollTop = box.scrollHeight;
         });
-        document.getElementById('postText').value = "";
-        document.getElementById('postImg').value = "";
-    });
 
-    // --- ФУНКЦИОНАЛ ЧАТА (MESSAGES) ---
-    document.getElementById('sendBtn').addEventListener('click', async () => {
-        const input = document.getElementById('chatInput');
-        if(!currentUser || !input.value) return;
-
-        await addDoc(collection(db, "messages"), {
-            name: currentUser.displayName,
-            uid: currentUser.uid,
-            text: input.value,
-            timestamp: serverTimestamp()
-        });
-        input.value = "";
-    });
-
-    // --- ПОЛУЧЕНИЕ ДАННЫХ В РЕАЛЬНОМ ВРЕМЕНИ ---
-    function loadData() {
-        // Загрузка постов
+        // Лента в реальном времени
         onSnapshot(query(collection(db, "posts"), orderBy("timestamp", "desc")), (snap) => {
             const feed = document.getElementById('feed');
             feed.innerHTML = "";
-            snap.forEach(doc => {
-                const p = doc.data();
-                feed.innerHTML += `
-                    <div class="card">
-                        <b>${p.author}</b> <br>
-                        <p>${p.text}</p>
-                        ${p.image ? `<img src="${p.image}" style="width:100%; border-radius:8px;">` : ''}
-                    </div>`;
+            snap.forEach(d => {
+                const p = d.data();
+                feed.innerHTML += `<div class="card" style="margin-top:10px;"><b>${p.name}</b><p>${p.text}</p></div>`;
             });
-        });
-
-        // Загрузка чата
-        onSnapshot(query(collection(db, "messages"), orderBy("timestamp", "asc")), (snap) => {
-            const chatBox = document.getElementById('chat-box');
-            chatBox.innerHTML = "";
-            snap.forEach(doc => {
-                const m = doc.data();
-                const isMe = m.uid === currentUser.uid;
-                chatBox.innerHTML += `
-                    <div class="msg ${isMe ? 'my-msg' : 'other-msg'}">
-                        <small style="font-size:10px; display:block; opacity:0.8;">${m.name}</small>
-                        ${m.text}
-                    </div>`;
-            });
-            chatBox.scrollTop = chatBox.scrollHeight;
         });
     }
+
+    // Кнопки отправки
+    document.getElementById('sendBtn').onclick = async () => {
+        const txt = document.getElementById('chatInput').value;
+        if (!user || !txt) return;
+        try {
+            await addDoc(collection(db, "messages"), { name: user.displayName, text: txt, uid: user.uid, timestamp: serverTimestamp() });
+            document.getElementById('chatInput').value = "";
+        } catch (e) { alert("Ошибка чата: " + e.message); }
+    };
+
+    document.getElementById('publishBtn').onclick = async () => {
+        const txt = document.getElementById('postText').value;
+        if (!user || !txt) return;
+        try {
+            await addDoc(collection(db, "posts"), { name: user.displayName, text: txt, timestamp: serverTimestamp() });
+            document.getElementById('postText').value = "";
+        } catch (e) { alert("Ошибка ленты: " + e.message); }
+    };
 </script>
 </body>
 </html>
