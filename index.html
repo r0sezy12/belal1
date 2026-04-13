@@ -4,48 +4,50 @@
     <meta charset="UTF-8">
     <title>Hazigram — Белал</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #ebedf0; margin: 0; display: flex; flex-direction: column; height: 100vh; }
-        header { background: white; padding: 10px 50px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #ebedf0; margin: 0; display: flex; flex-direction: column; height: 100vh; }
+        header { background: white; padding: 10px 50px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); z-index: 10; }
         .main-content { display: flex; justify-content: center; gap: 20px; padding: 20px; flex: 1; overflow: hidden; }
         
         /* Лента */
-        .feed-section { width: 550px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
-        .create-post { background: white; padding: 20px; border-radius: 10px; }
-        .post-card { background: white; padding: 15px; border-radius: 10px; }
-        .post-img { width: 100%; border-radius: 8px; margin-top: 10px; }
-
-        /* Чат (Правая панель) */
-        .side-panel { width: 300px; background: white; border-radius: 10px; display: flex; flex-direction: column; }
-        #chat-messages { flex: 1; overflow-y: auto; padding: 10px; font-size: 14px; border-top: 1px solid #eee; }
-        .input-area { padding: 10px; display: flex; gap: 5px; border-top: 1px solid #eee; }
+        .feed-section { width: 550px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; padding-right: 10px; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .post-img { width: 100%; border-radius: 8px; margin-top: 10px; display: block; }
         
-        input, button { padding: 10px; border-radius: 5px; border: 1px solid #ddd; }
-        .primary-btn { background: #007bff; color: white; border: none; cursor: pointer; width: 100%; }
+        /* Чат */
+        .chat-panel { width: 350px; background: white; border-radius: 12px; display: flex; flex-direction: column; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        #chat-box { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 8px; border-top: 1px solid #eee; }
+        .msg { padding: 8px 12px; border-radius: 15px; max-width: 80%; font-size: 14px; line-height: 1.4; }
+        .my-msg { align-self: flex-end; background: #0084ff; color: white; }
+        .other-msg { align-self: flex-start; background: #e4e6eb; color: black; }
+
+        input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px; box-sizing: border-box; }
+        .btn { background: #0084ff; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; }
+        .btn:hover { background: #0073e6; }
     </style>
 </head>
 <body>
 
 <header>
-    <h2 style="color: #007bff;">Hazigram</h2>
-    <div id="user-info">Загрузка...</div>
+    <h2 style="color: #0084ff; margin: 0;">Hazigram</h2>
+    <div id="user-status" style="font-size: 14px; color: #666;">Вход...</div>
 </header>
 
 <div class="main-content">
     <div class="feed-section">
-        <div class="create-post">
-            <input type="text" id="postText" placeholder="Что у вас нового?" style="width: 95%;">
-            <input type="text" id="postImg" placeholder="Ссылка на фото (URL)" style="width: 95%; margin-top:10px;">
-            <button class="primary-btn" onclick="createPost()" style="margin-top:10px;">Опубликовать</button>
+        <div class="card">
+            <input type="text" id="postText" placeholder="Что у вас нового?">
+            <input type="text" id="postImg" placeholder="Ссылка на картинку (URL)">
+            <button class="btn" onclick="createPost()">Опубликовать</button>
         </div>
         <div id="feed"></div>
     </div>
 
-    <div class="side-panel">
-        <div style="padding: 10px; font-weight: bold;">💬 Сообщения</div>
-        <div id="chat-messages">Выберите чат...</div>
-        <div class="input-area">
-            <input type="text" id="chatInput" placeholder="Введите сообщение...">
-            <button onclick="sendDM()" style="background:#007bff; color:white; border:none;">➤</button>
+    <div class="chat-panel">
+        <div style="padding: 15px; font-weight: bold; border-bottom: 1px solid #eee;">Чат (ID собеседника в консоли)</div>
+        <div id="chat-box"></div>
+        <div style="padding: 10px; border-top: 1px solid #eee;">
+            <input type="text" id="chatInput" placeholder="Введите сообщение..." style="margin-bottom: 5px;">
+            <button class="btn" onclick="sendDM()">Отправить</button>
         </div>
     </div>
 </div>
@@ -67,76 +69,72 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const auth = getAuth(app);
-    let user = null;
 
+    let myUID = null;
+    const targetUID = "Almas_Admin"; // Для теста ID собеседника фиксированный
+
+    // 1. Авторизация
     signInAnonymously(auth);
-    onAuthStateChanged(auth, u => { 
-        if(u) { 
-            user = u; 
-            document.getElementById('user-info').innerText = "Белал Гаппаров (ID: " + u.uid.substring(0,5) + ")";
-            initFeed();
-            initChat();
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            myUID = user.uid;
+            document.getElementById('user-status').innerText = "Белал Гаппаров (ID: " + myUID.substring(0,6) + ")";
+            console.log("Твой ID для чата:", myUID);
+            initApp();
         }
     });
 
-    // 1. ЛЕНТА: Создание поста
-    window.createPost = async () => {
-        const text = document.getElementById('postText').value;
-        const img = document.getElementById('postImg').value;
-        await addDoc(collection(db, "posts"), {
-            author: "Белал",
-            text: text,
-            image: img,
-            likes: 0,
-            timestamp: serverTimestamp()
-        });
-    };
-
-    // 2. ЛЕНТА: Слушатель
-    function initFeed() {
-        onSnapshot(query(collection(db, "posts"), orderBy("timestamp", "desc")), snap => {
-            const f = document.getElementById('feed');
-            f.innerHTML = "";
+    function initApp() {
+        // Слушатель Ленты
+        onSnapshot(query(collection(db, "posts"), orderBy("timestamp", "desc")), (snap) => {
+            const feedDiv = document.getElementById('feed');
+            feedDiv.innerHTML = "";
             snap.forEach(d => {
                 const p = d.data();
-                f.innerHTML += `
-                    <div class="post-card">
-                        <b>${p.author}</b> <br> <small>${p.timestamp?.toDate().toLocaleString() || ''}</small>
+                feedDiv.innerHTML += `
+                    <div class="card" style="margin-top:15px;">
+                        <b>Белал Гаппаров</b> <small style="color:gray;">${p.timestamp?.toDate().toLocaleString() || ''}</small>
                         <p>${p.text}</p>
                         ${p.image ? `<img src="${p.image}" class="post-img">` : ''}
-                        <button onclick="likePost('${d.id}')" style="border:none; background:none; cursor:pointer; color:#007bff; margin-top:10px;">💜 ${p.likes} лайк</button>
+                        <button onclick="likePost('${d.id}')" style="background:none; border:none; color:#0084ff; cursor:pointer; margin-top:10px;">💜 ${p.likes || 0} лайков</button>
                     </div>`;
             });
         });
+
+        // Слушатель Чата
+        onSnapshot(query(collection(db, "messages"), orderBy("timestamp", "asc")), (snap) => {
+            const chatDiv = document.getElementById('chat-box');
+            chatDiv.innerHTML = "";
+            snap.forEach(d => {
+                const m = d.data();
+                if ((m.sender === myUID && m.receiver === targetUID) || (m.sender === targetUID && m.receiver === myUID)) {
+                    const div = document.createElement('div');
+                    div.className = `msg ${m.sender === myUID ? 'my-msg' : 'other-msg'}`;
+                    div.textContent = m.text;
+                    chatDiv.appendChild(div);
+                }
+            });
+            chatDiv.scrollTop = chatDiv.scrollHeight;
+        });
     }
+
+    // ФУНКЦИИ
+    window.createPost = async () => {
+        const text = document.getElementById('postText').value;
+        const img = document.getElementById('postImg').value;
+        if(!text) return;
+        await addDoc(collection(db, "posts"), { text, image: img, likes: 0, timestamp: serverTimestamp() });
+        document.getElementById('postText').value = ""; document.getElementById('postImg').value = "";
+    };
 
     window.likePost = (id) => updateDoc(doc(db, "posts", id), { likes: increment(1) });
 
-    // 3. ЧАТ: Отправка
     window.sendDM = async () => {
-        const text = document.getElementById('chatInput').value;
-        await addDoc(collection(db, "messages"), {
-            sender: user.uid,
-            receiver: "Almas_ID",
-            text: text,
-            timestamp: serverTimestamp()
-        });
-        document.getElementById('chatInput').value = "";
+        const input = document.getElementById('chatInput');
+        if(!input.value) return;
+        await addDoc(collection(db, "messages"), { sender: myUID, receiver: targetUID, text: input.value, timestamp: serverTimestamp() });
+        input.value = "";
     };
-
-    // 4. ЧАТ: Слушатель
-    function initChat() {
-        onSnapshot(query(collection(db, "messages"), orderBy("timestamp", "asc")), snap => {
-            const c = document.getElementById('chat-messages');
-            c.innerHTML = "";
-            snap.forEach(d => {
-                const m = d.data();
-                c.innerHTML += `<div style="text-align: ${m.sender === user.uid ? 'right' : 'left'}; margin-bottom:5px;">
-                    <span style="background: ${m.sender === user.uid ? '#dcf8c6' : '#eee'}; padding: 5px 10px; border-radius:10px;">${m.text}</span>
-                </div>`;
-            });
-        });
-    }
 </script>
 </body>
 </html>
