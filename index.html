@@ -1,84 +1,98 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<title>Облачная практика</title>
+    <meta charset="UTF-8">
+    <title>Облачная практика — Белал</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #f4f7f6; }
+        .container { background: white; padding: 20px; border-radius: 10px; max-width: 500px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        input { width: 90%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        .post { border: 1px solid #eee; padding: 15px; margin-top: 15px; background: #fff; border-radius: 8px; }
+        .like-btn { background: #e7f3ff; color: #007bff; font-weight: bold; margin-top: 10px; }
+    </style>
 </head>
 <body>
 
-<h1>Проект успешно запущен в облаке!</h1>
-<hr>
+<div class="container">
+    <h1>Проект в облаке!</h1>
+    <p>Студент: <strong>Гаппаров Белал</strong>, группа <strong>ПО-3</strong></p>
+    <hr>
+    
+    <h2>Отправка данных</h2>
+    <input id="name" placeholder="Введите имя">
+    <input id="email" placeholder="Введите email">
+    <button onclick="sendData()">Отправить в Firebase</button>
+</div>
 
-<p>Работу выполнил студент: <strong>Гаппаров Белал</strong></p>
-<p>Группа: po243 <strong>ПО-3</strong></p>
-<p>Тип облака: <strong>PaaS (GitHub Pages)</strong></p>
-
-<hr>
-
-<h2>Отправка данных в Firebase</h2>
-
-<input id="name" placeholder="Введите имя"><br><br>
-<input id="email" placeholder="Введите email"><br><br>
-
-<button onclick="sendData()">Отправить</button>
-  <div id="feed"></div>
+<div id="feed" style="max-width: 540px;"></div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, updateDoc, doc, increment } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, updateDoc, doc, increment } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
-// Твой конфиг из скриншота
-const firebaseConfig = {
-  apiKey: "AIzaSyAs_Ldj7yMMzbDBSR89o3OV4245k-cpmyQ",
-  authDomain: "belal-a68b1.firebaseapp.com",
-  projectId: "belal-a68b1",
-  storageBucket: "belal-a68b1.firebasestorage.app",
-  messagingSenderId: "157333722793",
-  appId: "1:157333722793:web:4342f40b13cfa71acffbb8"
-};
+    const firebaseConfig = {
+        apiKey: "AIzaSyAs_Ldj7yMMzbDBSR89o3OV4245k-cpmyQ",
+        authDomain: "belal-a68b1.firebaseapp.com",
+        projectId: "belal-a68b1",
+        storageBucket: "belal-a68b1.firebasestorage.app",
+        messagingSenderId: "157333722793",
+        appId: "1:157333722793:web:4342f40b13cfa71acffbb8"
+    };
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-window.db = db; // Это нужно для теста на взлом
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-// Функция отправки (добавляем лайки и время)
-window.sendData = async () => {
-  const name = document.getElementById("name").value;
-  const email = document.getElementById("email").value;
-  try {
-    await addDoc(collection(db, "requests"), {
-      name: name,
-      email: email,
-      likes: 0,
-      timestamp: serverTimestamp()
+    // Сделаем функции доступными для HTML-кнопок
+    window.sendData = async () => {
+        const nameEl = document.getElementById("name");
+        const emailEl = document.getElementById("email");
+        
+        if (nameEl.value.length < 3) return alert("Имя слишком короткое!");
+
+        try {
+            await addDoc(collection(db, "requests"), {
+                name: nameEl.value,
+                email: emailEl.value,
+                likes: 0,
+                timestamp: serverTimestamp()
+            });
+            nameEl.value = "";
+            emailEl.value = "";
+        } catch (e) {
+            alert("Ошибка безопасности: данные отклонены сервером!");
+            console.error(e);
+        }
+    };
+
+    window.processLike = async (id) => {
+        try {
+            const docRef = doc(db, "requests", id);
+            await updateDoc(docRef, {
+                likes: increment(1)
+            });
+        } catch (e) {
+            alert("Ошибка: вы не можете менять ничего, кроме лайков!");
+        }
+    };
+
+    // Real-time слушатель
+    const q = query(collection(db, "requests"), orderBy("timestamp", "desc"));
+    onSnapshot(q, (snapshot) => {
+        const feed = document.getElementById("feed");
+        feed.innerHTML = ""; 
+        snapshot.forEach((doc) => {
+            const res = doc.data();
+            const date = res.timestamp ? res.timestamp.toDate().toLocaleTimeString() : "...";
+            feed.innerHTML += `
+                <div class="post">
+                    <small style="float:right; color: #999;">${date}</small>
+                    <b>${res.name}</b> <br>
+                    <span style="color: #666;">${res.email}</span> <br>
+                    <button class="like-btn" onclick="processLike('${doc.id}')">👍 ${res.likes || 0}</button>
+                </div>`;
+        });
     });
-    document.getElementById("name").value = "";
-    document.getElementById("email").value = "";
-  } catch (e) {
-    alert("Ошибка: проверь правила Rules!");
-  }
-};
-
-// Функция лайка (атомарная)
-window.processLike = async (id) => {
-  await updateDoc(doc(db, "requests", id), {
-    likes: increment(1)
-  });
-};
-
-// Живое обновление ленты (onSnapshot)
-const q = query(collection(db, "requests"), orderBy("timestamp", "desc"));
-onSnapshot(q, (snapshot) => {
-  const feed = document.getElementById("feed");
-  feed.innerHTML = ""; 
-  snapshot.forEach((doc) => {
-    const res = doc.data();
-    feed.innerHTML += `
-      <div style="border: 1px solid #ccc; padding: 10px; margin: 10px; border-radius: 8px;">
-        <b>${res.name}</b> (${res.email}) <br>
-        <button onclick="processLike('${doc.id}')">👍 ${res.likes || 0}</button>
-      </div>`;
-  });
 </script>
 
 </body>
