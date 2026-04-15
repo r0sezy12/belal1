@@ -1,85 +1,85 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<title>Облачная практика</title>
+    <meta charset="UTF-8">
+    <title>Облачная практика — Гаппаров Белал</title>
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .container { width: 100%; max-width: 450px; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        button { background: #007bff; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; font-size: 16px; transition: 0.3s; }
+        button:hover { background: #0056b3; }
+        .post { background: white; border-radius: 12px; padding: 15px; margin-top: 15px; width: 100%; max-width: 450px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: left; border-left: 6px solid #007bff; }
+        .like-btn { background: #e7f3ff; color: #007bff; width: auto; padding: 5px 15px; margin-top: 10px; font-size: 14px; }
+    </style>
 </head>
 <body>
 
-<h1>Проект успешно запущен в облаке!</h1>
-<hr>
+<div class="container">
+    <h2>Облачная практика</h2>
+    <p>Студент: <b>Гаппаров Белал</b> (ПО-3)</p>
+    <input type="text" id="name" placeholder="Ваше имя">
+    <input type="email" id="email" placeholder="Ваш Email">
+    <button onclick="sendData()">Опубликовать запись</button>
+</div>
 
-<p>Работу выполнил студент: <strong>Гаппаров Белал</strong></p>
-<p>Группа: po243 <strong>ПО-3</strong></p>
-<p>Тип облака: <strong>PaaS (GitHub Pages)</strong></p>
-
-<hr>
-
-<h2>Отправка данных в Firebase</h2>
-
-<input id="name" placeholder="Введите имя"><br><br>
-<input id="email" placeholder="Введите email"><br><br>
-
-<button onclick="sendData()">Отправить</button>
-  <div id="feed"></div>
+<div id="feed"></div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, updateDoc, doc, increment } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, updateDoc, doc, increment } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
-// Твой конфиг из скриншота
-const firebaseConfig = {
-  apiKey: "AIzaSyAs_Ldj7yMMzbDBSR89o3OV4245k-cpmyQ",
-  authDomain: "belal-a68b1.firebaseapp.com",
-  projectId: "belal-a68b1",
-  storageBucket: "belal-a68b1.firebasestorage.app",
-  messagingSenderId: "157333722793",
-  appId: "1:157333722793:web:4342f40b13cfa71acffbb8"
-};
+    // Твой конфиг
+    const firebaseConfig = {
+        apiKey: "AIzaSyAs_Ldj7yMMzbDBSR89o3OV4245k-cpmyQ",
+        authDomain: "belal-a68b1.firebaseapp.com",
+        projectId: "belal-a68b1",
+        storageBucket: "belal-a68b1.firebasestorage.app",
+        messagingSenderId: "157333722793",
+        appId: "1:157333722793:web:4342f40b13cfa71acffbb8"
+    };
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-window.db = db; // Это нужно для теста на взлом
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    window.db = db; // Обязательно для теста на взлом
 
-// Функция отправки (добавляем лайки и время)
-window.sendData = async () => {
-  const name = document.getElementById("name").value;
-  const email = document.getElementById("email").value;
-  try {
-    await addDoc(collection(db, "requests"), {
-      name: name,
-      email: email,
-      likes: 0,
-      timestamp: serverTimestamp()
-    });
-    document.getElementById("name").value = "";
-    document.getElementById("email").value = "";
-  } catch (e) {
-    alert("Ошибка: проверь правила Rules!");
-  }
-};
+    // Функция отправки
+    window.sendData = async () => {
+        const name = document.getElementById("name").value;
+        const email = document.getElementById("email").value;
+        try {
+            await addDoc(collection(db, "requests"), {
+                name, email, likes: 0, timestamp: serverTimestamp()
+            });
+            document.getElementById("name").value = "";
+            document.getElementById("email").value = "";
+        } catch (e) {
+            alert("Ошибка! Проверьте правила доступа или корректность данных.");
+        }
+    };
 
-// Функция лайка (атомарная)
-window.processLike = async (id) => {
-  await updateDoc(doc(db, "requests", id), {
-    likes: increment(1)
-  });
-};
+    // Функция лайка
+    window.processLike = async (id) => {
+        await updateDoc(doc(db, "requests", id), {
+            likes: increment(1)
+        });
+    };
 
-// Живое обновление ленты (onSnapshot)
-const q = query(collection(db, "requests"), orderBy("timestamp", "desc"));
-onSnapshot(q, (snapshot) => {
-  const feed = document.getElementById("feed");
-  feed.innerHTML = ""; 
-  snapshot.forEach((doc) => {
-    const res = doc.data();
-    feed.innerHTML += `
-      <div style="border: 1px solid #ccc; padding: 10px; margin: 10px; border-radius: 8px;">
-        <b>${res.name}</b> (${res.email}) <br>
-        <button onclick="processLike('${doc.id}')">👍 ${res.likes || 0}</button>
-      </div>`;
-  });
+    // Слушатель ленты в реальном времени
+    const q = query(collection(db, "requests"), orderBy("timestamp", "desc"));
+    onSnapshot(q, (snapshot) => {
+        const feed = document.getElementById("feed");
+        feed.innerHTML = "";
+        snapshot.forEach((doc) => {
+            const data = doc.data();
+            feed.innerHTML += `
+                <div class="post">
+                    <b>${data.name}</b> <br>
+                    <small>${data.email}</small> <br>
+                    <button class="like-btn" onclick="processLike('${doc.id}')">👍 ${data.likes || 0}</button>
+                </div>`;
+        });
+    });
 </script>
-
 </body>
-</html> 
+</html>
