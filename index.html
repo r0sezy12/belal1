@@ -2,34 +2,39 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Облачная практика — Гаппаров Белал</title>
+    <title>Cloud Practice - Advanced</title>
     <style>
-        body { font-family: 'Inter', sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        .container { width: 100%; max-width: 450px; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; }
-        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        button { background: #007bff; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; font-size: 16px; transition: 0.3s; }
-        button:hover { background: #0056b3; }
-        .post { background: white; border-radius: 12px; padding: 15px; margin-top: 15px; width: 100%; max-width: 450px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: left; border-left: 6px solid #007bff; }
-        .like-btn { background: #e7f3ff; color: #007bff; width: auto; padding: 5px 15px; margin-top: 10px; font-size: 14px; }
+        body { font-family: 'Segoe UI', sans-serif; background: #eef2f7; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .card { width: 100%; max-width: 450px; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); margin-bottom: 20px; text-align: center; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        button { background: #007bff; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; margin-top: 10px; }
+        .search-box { background: #fff; border: 2px solid #007bff; }
+        .post { background: white; padding: 15px; margin-top: 15px; border-radius: 10px; width: 100%; max-width: 450px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); position: relative; border-left: 5px solid #28a745; }
+        .btn-group { display: flex; gap: 10px; margin-top: 10px; }
+        .del-btn { background: #dc3545; font-size: 12px; padding: 5px; }
+        .like-btn { background: #28a745; width: auto; padding: 5px 15px; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>Облачная практика</h2>
-    <p>Студент: <b>Гаппаров Белал</b> (ПО-3)</p>
-    <input type="text" id="name" placeholder="Ваше имя">
-    <input type="email" id="email" placeholder="Ваш Email">
-    <button onclick="sendData()">Опубликовать запись</button>
+<div class="card">
+    <h2>🚀 Облачная Панель</h2>
+    <p>Студент: <b>Белал Гаппаров</b></p>
+    <input type="text" id="name" placeholder="Имя пользователя">
+    <input type="email" id="email" placeholder="Email">
+    <button onclick="sendData()">Отправить в Firebase</button>
+</div>
+
+<div class="card" style="padding: 15px;">
+    <input type="text" id="searchInput" class="search-box" placeholder="🔍 Поиск по имени..." oninput="renderFeed()">
 </div>
 
 <div id="feed"></div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, updateDoc, doc, increment } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, updateDoc, doc, increment, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
-    // Твой конфиг
     const firebaseConfig = {
         apiKey: "AIzaSyAs_Ldj7yMMzbDBSR89o3OV4245k-cpmyQ",
         authDomain: "belal-a68b1.firebaseapp.com",
@@ -41,9 +46,9 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-    window.db = db; // Обязательно для теста на взлом
+    let allPosts = []; // Хранилище для поиска
 
-    // Функция отправки
+    // 1. ОТПРАВКА
     window.sendData = async () => {
         const name = document.getElementById("name").value;
         const email = document.getElementById("email").value;
@@ -52,34 +57,47 @@
                 name, email, likes: 0, timestamp: serverTimestamp()
             });
             document.getElementById("name").value = "";
-            document.getElementById("email").value = "";
+        } catch (e) { alert("Ошибка Rules!"); }
+    };
+
+    // 2. ЛАЙКИ
+    window.processLike = async (id) => {
+        await updateDoc(doc(db, "requests", id), { likes: increment(1) });
+    };
+
+    // 3. НОВАЯ ФУНКЦИЯ: ПОПЫТКА УДАЛЕНИЯ (для теста безопасности)
+    window.tryDelete = async (id) => {
+        try {
+            await deleteDoc(doc(db, "requests", id));
         } catch (e) {
-            alert("Ошибка! Проверьте правила доступа или корректность данных.");
+            alert("Критическая ошибка: Удаление запрещено правилами Security Rules!");
+            console.error("Access Denied:", e.message);
         }
     };
 
-    // Функция лайка
-    window.processLike = async (id) => {
-        await updateDoc(doc(db, "requests", id), {
-            likes: increment(1)
-        });
-    };
-
-    // Слушатель ленты в реальном времени
+    // 4. РЕАКТИВНЫЙ ВЫВОД + ПОИСК
     const q = query(collection(db, "requests"), orderBy("timestamp", "desc"));
     onSnapshot(q, (snapshot) => {
+        allPosts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderFeed();
+    });
+
+    window.renderFeed = () => {
+        const term = document.getElementById("searchInput").value.toLowerCase();
         const feed = document.getElementById("feed");
         feed.innerHTML = "";
-        snapshot.forEach((doc) => {
-            const data = doc.data();
+        
+        allPosts.filter(p => p.name.toLowerCase().includes(term)).forEach(p => {
             feed.innerHTML += `
                 <div class="post">
-                    <b>${data.name}</b> <br>
-                    <small>${data.email}</small> <br>
-                    <button class="like-btn" onclick="processLike('${doc.id}')">👍 ${data.likes || 0}</button>
+                    <b>${p.name}</b> <br> <small>${p.email}</small>
+                    <div class="btn-group">
+                        <button class="like-btn" onclick="processLike('${p.id}')">👍 ${p.likes || 0}</button>
+                        <button class="del-btn" onclick="tryDelete('${p.id}')">🗑 Удалить</button>
+                    </div>
                 </div>`;
         });
-    });
+    };
 </script>
 </body>
 </html>
