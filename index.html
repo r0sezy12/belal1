@@ -2,150 +2,95 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Монитор статуса</title>
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f0f2f5;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
-            margin: 0;
-        }
-
-        .card {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            padding: 24px;
-            width: 100%;
-            max-width: 500px;
-            margin-bottom: 20px;
-        }
-
-        h2 { margin-top: 0; font-size: 1.2rem; color: #1a1a1a; }
-        #myInfo { color: #666; margin-bottom: 15px; font-size: 0.9rem; }
-
-        .status-buttons {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
-
-        .btn {
-            border: none;
-            border-radius: 8px;
-            padding: 12px;
-            font-weight: 600;
-            color: white;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            transition: opacity 0.2s;
-            border: 1px solid rgba(0,0,0,0.1);
-        }
-
-        .btn:hover { opacity: 0.9; }
-
-        .btn-study { background-color: #28a745; }
-        .btn-coffee { background-color: #ffc107; color: #000; }
-        .btn-game { background-color: #17a2b8; }
-        .btn-home { background-color: #6c757d; }
-
-        .user-item {
-            display: flex;
-            align-items: center;
-            padding: 10px 0;
-            border-bottom: 1px solid #eee;
-        }
-
-        .user-item:last-child { border-bottom: none; }
-
-        .status-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            margin-right: 12px;
-            flex-shrink: 0;
-            background-color: #adb5bd; /* Стандартный цвет для всех */
-        }
-
-        #groupList { margin-top: 10px; }
+        body { font-family: sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 400px; margin-bottom: 20px; }
+        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        button { padding: 12px; border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: bold; background: #007bff; transition: 0.2s; }
+        button:hover { background: #0056b3; }
+        .status-item { padding: 10px; border-bottom: 1px solid #eee; }
+        .status-item:last-child { border-bottom: none; }
+        #myInfo { font-weight: bold; color: #333; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
     <div class="card">
-        <h2>Мой профиль</h2>
-        <div id="myInfo">Загрузка профиля...</div>
-       
-        <div class="status-buttons">
-            <button class="btn btn-study" onclick="changeStatus('📚 Учусь')">📚 Учусь</button>
-            <button class="btn btn-coffee" onclick="changeStatus('☕ Кофе')">☕ Кофе</button>
-            <button class="btn btn-game" onclick="changeStatus('🎮 В игре')">🎮 В игре</button>
-            <button class="btn btn-home" onclick="changeStatus('🏠 Дома')">🏠 Дома</button>
+        <h3>Мой профиль</h3>
+        <p id="myInfo">Подключение к базе...</p>
+        <div class="btn-grid">
+            <button onclick="changeStatus('💻 Учусь')">💻 Учусь</button>
+            <button onclick="changeStatus('☕ Кофе')">☕ Кофе</button>
+            <button onclick="changeStatus('🎮 В игре')">🎮 В игре</button>
+            <button onclick="changeStatus('🏠 Дома')">🏠 Дома</button>
         </div>
     </div>
 
     <div class="card">
-        <h2>Монитор группы</h2>
-        <div id="groupList"></div>
+        <h3>Монитор группы</h3>
+        <div id="groupList">Загрузка списка...</div>
     </div>
 
     <script type="module">
-        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm&#39;
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
-        
-
+        // ТВОИ ДАННЫЕ
         const URL = 'https://yyhxkerpjvntoflbmmny.supabase.co'; 
-        const KEY = 'sb_publishable_idalKmPYLEUAMuEl0hjZEQ_CjFIWrRZ';
         const MY_ID = 'c75c9c53-595b-419f-adf5-f253b4214dc3'; 
+        
+        // ВНИМАНИЕ: Сюда вставь ДЛИННЫЙ ключ из Supabase (Settings -> API -> anon public)
+        const KEY = 'ВСТАВЬ_СЮДА_ДЛИННЫЙ_КЛЮЧ_ANON'; 
 
         const supabase = createClient(URL, KEY);
 
-        
-        window.changeStatus = async (text) => {
+        // Функция обновления статуса
+        window.changeStatus = async (newStatus) => {
             const { error } = await supabase
                 .from('profiles')
-                .update({ status: text }) // Убрали обновление колонки color
+                .update({ status: newStatus })
                 .eq('id', MY_ID);
 
             if (error) {
-                alert("Ошибка: " + error.message);
-                console.error(error);
+                console.error("Ошибка обновления:", error);
+                alert("Не удалось обновить статус. Проверь консоль (F12)");
             } else {
                 fetchGroup();
             }
         };
 
+        // Функция получения списка всех пользователей
         async function fetchGroup() {
-            const { data, error } = await supabase
-                .from('profiles')
-                .select('id, username, status') // Запрашиваем только те колонки, которые точно есть
-                .order('username', { ascending: true });
+            try {
+                const { data, error } = await supabase
+                    .from('profiles')
+                    .select('id, username, status')
+                    .order('username', { ascending: true });
 
-            if (error) return console.error(error);
+                if (error) throw error;
 
-            const list = document.getElementById('groupList');
-            list.innerHTML = data.map(user => `
-                <div class="user-item">
-                    <div class="status-dot"></div>
-                    <div style="flex-grow: 1;">
-                        <strong>${user.username || 'Без имени'}</strong><br>
-                        <small style="color: #666;">${user.status || 'Статус не задан'}</small>
+                const list = document.getElementById('groupList');
+                list.innerHTML = data.map(user => `
+                    <div class="status-item">
+                        <strong>${user.username}</strong>: ${user.status || 'Нет статуса'}
                     </div>
-                </div>
-            `).join('');
+                `).join('');
 
-            const me = data.find(u => u.id === MY_ID);
-            if (me) document.getElementById('myInfo').innerText = `Вы зашли как: ${me.username}`;
+                const me = data.find(u => u.id === MY_ID);
+                if (me) {
+                    document.getElementById('myInfo').innerText = `Вы зашли как: ${me.username}`;
+                } else {
+                    document.getElementById('myInfo').innerText = "Ошибка: Ваш ID не найден в таблице";
+                }
+            } catch (err) {
+                console.error("Ошибка загрузки:", err);
+                document.getElementById('myInfo').innerText = "Ошибка соединения с базой";
+            }
         }
 
+        // Запускаем при открытии
         fetchGroup();
+        // Обновляем каждые 5 секунд
         setInterval(fetchGroup, 5000);
     </script>
 </body>
