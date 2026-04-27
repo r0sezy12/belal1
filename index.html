@@ -33,13 +33,12 @@
     <script type="module">
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
-        // СЮДА ВСТАВЬ СВОИ ДАННЫЕ ИЗ НАСТРОЕК SUPABASE (Settings -> API)
-        const URL = 'https://yyhxkerpjvntoflbmmny.supabase.co'; 
-        const KEY = 'sb_publishable_idalKmPYLEUAMuEl0hjZEQ_CjFIWrRZ';
-        const supabase = createClient(URL, KEY);
+    
+const URL = 'https://yyhxkerpjvntoflbmmny.supabase.co'; 
+const KEY = 'sb_publishable_idalKmPYLEUAMuEl0hjZEQ_CjFIWrRZ';
+const MY_ID = 'c75c9c53-595b-419f-adf5-f253b4214dc3'; 
 
-        // ТОТ САМЫЙ ID ИЗ ТАБЛИЦЫ
-        const MY_ID = 'c75c9c53-595b-419f-adf5-f253b4214dc3'; 
+const supabase = createClient(URL, KEY);
 
         // Функция смены статуса
         window.changeStatus = async (text, color) => {
