@@ -2,74 +2,139 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Мой статус</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Монитор статуса</title>
     <style>
-        body { font-family: sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 400px; margin-bottom: 20px; }
-        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
-        button { padding: 10px; border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: bold; background: #007bff; }
-        .status-item { display: flex; align-items: center; margin-top: 10px; padding: 10px; border-bottom: 1px solid #eee; }
-        .user-info { flex-grow: 1; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            padding: 24px;
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 20px;
+        }
+
+        h2 { margin-top: 0; font-size: 1.2rem; color: #1a1a1a; }
+        #myInfo { color: #666; margin-bottom: 15px; font-size: 0.9rem; }
+
+        .status-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .btn {
+            border: none;
+            border-radius: 8px;
+            padding: 12px;
+            font-weight: 600;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: opacity 0.2s;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .btn:hover { opacity: 0.9; }
+
+        .btn-study { background-color: #28a745; }
+        .btn-coffee { background-color: #ffc107; color: #000; }
+        .btn-game { background-color: #17a2b8; }
+        .btn-home { background-color: #6c757d; }
+
+        .user-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .user-item:last-child { border-bottom: none; }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 12px;
+            flex-shrink: 0;
+            background-color: #adb5bd; /* Стандартный цвет для всех */
+        }
+
+        #groupList { margin-top: 10px; }
     </style>
 </head>
 <body>
 
     <div class="card">
-        <h3>Мой профиль</h3>
-        <p id="myInfo">Загрузка...</p>
-        <div class="btn-grid">
-            <button onclick="changeStatus('💻 Учусь')">💻 Учусь</button>
-            <button onclick="changeStatus('☕ Кофе')">☕ Кофе</button>
-            <button onclick="changeStatus('🎮 В игре')">🎮 В игре</button>
-            <button onclick="changeStatus('🏠 Дома')">🏠 Дома</button>
+        <h2>Мой профиль</h2>
+        <div id="myInfo">Загрузка профиля...</div>
+       
+        <div class="status-buttons">
+            <button class="btn btn-study" onclick="changeStatus('📚 Учусь')">📚 Учусь</button>
+            <button class="btn btn-coffee" onclick="changeStatus('☕ Кофе')">☕ Кофе</button>
+            <button class="btn btn-game" onclick="changeStatus('🎮 В игре')">🎮 В игре</button>
+            <button class="btn btn-home" onclick="changeStatus('🏠 Дома')">🏠 Дома</button>
         </div>
     </div>
 
     <div class="card">
-        <h3>Монитор группы</h3>
+        <h2>Монитор группы</h2>
         <div id="groupList"></div>
     </div>
 
     <script type="module">
-        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm&#39;
 
-        // ТВОИ ДАННЫЕ (НЕ МЕНЯЙ ИХ, ЕСЛИ УЖЕ ВСТАВИЛ)
-        const URL = 'https://yyhxkerpjvntoflbmmny.supabase.co'; 
-        const KEY = 'sb_publishable_idalKmPYLEUAMuEl0hjZEQ_CjFIWrRZ';
-        const MY_ID = 'c75c9c53-595b-419f-adf5-f253b4214dc3'; 
+        
+const URL = 'https://yyhxkerpjvntoflbmmny.supabase.co'; 
+const KEY = 'sb_publishable_idalKmPYLEUAMuEl0hjZEQ_CjFIWrRZ';
+const MY_ID = 'c75c9c53-595b-419f-adf5-f253b4214dc3'; 
 
-        const supabase = createClient(URL, KEY);
+const supabase = createClient(URL, KEY);;
 
-        // Функция смены статуса (БЕЗ COLOR)
         window.changeStatus = async (text) => {
             const { error } = await supabase
                 .from('profiles')
-                .update({ status: text }) // Убрали упоминание color
+                .update({ status: text }) // Убрали обновление колонки color
                 .eq('id', MY_ID);
 
             if (error) {
-                alert("Ошибка! Проверь RLS политики в Supabase.");
+                alert("Ошибка: " + error.message);
                 console.error(error);
             } else {
                 fetchGroup();
             }
         };
 
-        // Функция получения данных
         async function fetchGroup() {
             const { data, error } = await supabase
                 .from('profiles')
-                .select('id, username, status') // Запрашиваем только то, что есть
+                .select('id, username, status') // Запрашиваем только те колонки, которые точно есть
                 .order('username', { ascending: true });
 
             if (error) return console.error(error);
 
             const list = document.getElementById('groupList');
             list.innerHTML = data.map(user => `
-                <div class="status-item">
-                    <div class="user-info">
-                        <strong>${user.username}</strong><br>
-                        <small style="color: #666;">${user.status || 'Нет статуса'}</small>
+                <div class="user-item">
+                    <div class="status-dot"></div>
+                    <div style="flex-grow: 1;">
+                        <strong>${user.username || 'Без имени'}</strong><br>
+                        <small style="color: #666;">${user.status || 'Статус не задан'}</small>
                     </div>
                 </div>
             `).join('');
